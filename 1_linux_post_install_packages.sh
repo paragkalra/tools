@@ -26,3 +26,15 @@ sudo apt install golang-go -y
 
 # Gedit
 sudo apt install gedit -y
+
+# Pip
+sudo apt install python3-pip
+
+# NPM
+sudo apt install npm -y
+
+# node.js
+sudo apt install nodejs -y
+
+# Gemini CLI
+sudo npm install -g @google/gemini-cli
