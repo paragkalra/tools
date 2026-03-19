@@ -44,3 +44,6 @@ sudo npm install -g @google/gemini-cli
 
 # Helm
 sudo snap install helm --classic
+
+# Network tools like ifconfig
+sudo apt install net-tools -y
