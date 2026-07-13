@@ -1,3 +1,9 @@
 #!/bin/bash
-# Switch to runlevel 3 (multi-user, no GUI) without rebooting.
+# Switch to runlevel 3 (multi-user, no GUI) without rebooting, and force
+# the physical display off so nothing shows on the console (e.g. when
+# switching remotely over SSH while others are sleeping in the room).
+#
+# Requires a one-time setup so no login prompt is ever drawn on tty1:
+#   sudo systemctl mask getty@tty1.service
 sudo systemctl isolate multi-user.target
+sudo sh -c 'TERM=linux setterm --blank force > /dev/tty1'
