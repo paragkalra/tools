@@ -23,7 +23,8 @@ cmd="${1:-}"
 case "$cmd" in
   ""|switch)
     sudo systemctl isolate multi-user.target
-    sudo sh -c 'TERM=linux setterm --blank force > /dev/tty1'
+    sudo chvt 1
+    sudo sh -c 'TERM=linux setterm -cursor off -blank force > /dev/tty1'
     ;;
   mask)
     sudo systemctl mask getty@tty1.service
@@ -31,6 +32,7 @@ case "$cmd" in
   unmask)
     sudo systemctl unmask getty@tty1.service
     sudo systemctl start getty@tty1.service
+    sudo sh -c 'TERM=linux setterm -cursor on > /dev/tty1'
     ;;
   status)
     for t in graphical.target multi-user.target; do
