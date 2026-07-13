@@ -1,9 +1,49 @@
 #!/bin/bash
-# Switch to runlevel 3 (multi-user, no GUI) without rebooting, and force
-# the physical display off so nothing shows on the console (e.g. when
-# switching remotely over SSH while others are sleeping in the room).
+# cli3 - switch to runlevel 3 (multi-user, no GUI) without rebooting.
 #
-# Requires a one-time setup so no login prompt is ever drawn on tty1:
-#   sudo systemctl mask getty@tty1.service
-sudo systemctl isolate multi-user.target
-sudo sh -c 'TERM=linux setterm --blank force > /dev/tty1'
+# Also blanks the physical display (DPMS off on tty1) so nothing shows on
+# the monitor, e.g. when switching remotely over SSH while others are
+# asleep in the room. See also: gui5 (switch back to runlevel 5 / graphical).
+
+usage() {
+  cat <<'EOF'
+Usage: cli3 [command]
+
+  (no command)   Switch to runlevel 3 and blank the physical display
+  mask           One-time setup: stop the tty1 login prompt from ever
+                 being drawn on the physical display
+  unmask         Undo 'mask': restore the tty1 login prompt
+  status         Show current target and tty1 getty mask state
+  -h, --help     Show this help
+EOF
+}
+
+cmd="${1:-}"
+
+case "$cmd" in
+  ""|switch)
+    sudo systemctl isolate multi-user.target
+    sudo sh -c 'TERM=linux setterm --blank force > /dev/tty1'
+    ;;
+  mask)
+    sudo systemctl mask getty@tty1.service
+    ;;
+  unmask)
+    sudo systemctl unmask getty@tty1.service
+    sudo systemctl start getty@tty1.service
+    ;;
+  status)
+    for t in graphical.target multi-user.target; do
+      printf '%-22s %s\n' "$t" "$(systemctl is-active "$t")"
+    done
+    printf '%-22s %s\n' "getty@tty1.service" "$(systemctl is-enabled getty@tty1.service 2>&1)"
+    ;;
+  -h|--help)
+    usage
+    ;;
+  *)
+    echo "cli3: unknown command '$cmd'" >&2
+    usage >&2
+    exit 1
+    ;;
+esac
