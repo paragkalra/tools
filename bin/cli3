@@ -23,8 +23,10 @@ cmd="${1:-}"
 case "$cmd" in
   ""|switch)
     sudo systemctl isolate multi-user.target
-    sudo chvt 1
-    sudo sh -c 'TERM=linux setterm -cursor off -blank force > /dev/tty1'
+    # Blank whichever VT is actually on-screen (the display manager doesn't
+    # always use tty1 - e.g. GDM here uses tty2), not a hardcoded tty.
+    active_tty="$(cat /sys/class/tty/tty0/active)"
+    sudo sh -c "TERM=linux setterm -cursor off -blank force > /dev/$active_tty"
     ;;
   mask)
     sudo systemctl mask getty@tty1.service
@@ -32,13 +34,15 @@ case "$cmd" in
   unmask)
     sudo systemctl unmask getty@tty1.service
     sudo systemctl start getty@tty1.service
-    sudo sh -c 'TERM=linux setterm -cursor on > /dev/tty1'
+    active_tty="$(cat /sys/class/tty/tty0/active)"
+    sudo sh -c "TERM=linux setterm -cursor on > /dev/$active_tty"
     ;;
   status)
     for t in graphical.target multi-user.target; do
       printf '%-22s %s\n' "$t" "$(systemctl is-active "$t")"
     done
     printf '%-22s %s\n' "getty@tty1.service" "$(systemctl is-enabled getty@tty1.service 2>&1)"
+    printf '%-22s %s\n' "active vt" "$(cat /sys/class/tty/tty0/active)"
     ;;
   -h|--help)
     usage
