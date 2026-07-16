@@ -18,6 +18,9 @@ sudo apt install 1password -y
 # terminator
 sudo apt install terminator -y
 
+# xclip (clipboard access, needed for Claude Code image paste on Linux)
+sudo apt install xclip -y
+
 # curl
 sudo apt install curl -y
 
