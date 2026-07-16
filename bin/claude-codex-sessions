@@ -1,0 +1,32 @@
+#!/bin/bash
+# claude-codex-sessions - spawn three tmux sessions: a Claude session, a
+# Codex session, and a separate Claude session for cross-review. All three
+# share one timestamp so a batch is easy to spot and tear down together.
+
+set -euo pipefail
+
+timestamp="$(date +%Y%m%d-%H%M%S)"
+
+claude_session="claude-vibistic-${timestamp}"
+codex_session="codex-vibistic-${timestamp}"
+review_session="claude-x-review-${timestamp}"
+
+tmux new-session -d -s "$claude_session"
+tmux send-keys -t "$claude_session" "claude" Enter
+
+tmux new-session -d -s "$codex_session"
+tmux send-keys -t "$codex_session" "codex" Enter
+
+tmux new-session -d -s "$review_session"
+tmux send-keys -t "$review_session" "claude" Enter
+
+echo "Started tmux sessions:"
+echo "  $claude_session"
+echo "  $codex_session"
+echo "  $review_session"
+echo
+if [ -n "${TMUX:-}" ]; then
+  echo "Switch to one with: tmux switch-client -t <name>"
+else
+  echo "Attach with: tmux attach -t <name>"
+fi
