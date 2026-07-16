@@ -1,48 +1,39 @@
 #!/bin/bash
-# cli3 - switch to runlevel 3 (multi-user, no GUI) without rebooting.
+# cli3 - blank the physical display without tearing down the GUI session.
 #
-# Also blanks the physical display (DPMS off on tty1) so nothing shows on
-# the monitor, e.g. when switching remotely over SSH while others are
-# asleep in the room. See also: gui5 (switch back to runlevel 5 / graphical).
+# This machine drives its panel via the NVIDIA proprietary driver under
+# Xorg. Killing gdm/Xorg to switch to a text-mode runlevel (the old
+# approach) doesn't reliably hand the framebuffer back to the console on
+# this driver - the panel just freezes on the last rendered frame. So
+# instead we leave the session running and tell the live X server to DPMS
+# the panel off directly; NVIDIA handles that call correctly since it owns
+# the display. See also: gui5 (wake the display back up).
 
 usage() {
   cat <<'EOF'
 Usage: cli3 [command]
 
-  (no command)   Switch to runlevel 3 and blank the physical display
-  mask           One-time setup: stop the tty1 login prompt from ever
-                 being drawn on the physical display
-  unmask         Undo 'mask': restore the tty1 login prompt
-  status         Show current target and tty1 getty mask state
-  -h, --help     Show this help
+  (no command), off   Turn the physical display off (DPMS off)
+  status              Show current DPMS state
+  -h, --help          Show this help
 EOF
+}
+
+source "$(dirname "$(readlink -f "$0")")/_x11_env.sh"
+
+run_xset() {
+  x_env
+  sudo -u "$owner" env "${envs[@]}" xset "$@"
 }
 
 cmd="${1:-}"
 
 case "$cmd" in
-  ""|switch)
-    sudo systemctl isolate multi-user.target
-    # Blank whichever VT is actually on-screen (the display manager doesn't
-    # always use tty1 - e.g. GDM here uses tty2), not a hardcoded tty.
-    active_tty="$(cat /sys/class/tty/tty0/active)"
-    sudo sh -c "TERM=linux setterm -cursor off -blank force > /dev/$active_tty"
-    ;;
-  mask)
-    sudo systemctl mask getty@tty1.service
-    ;;
-  unmask)
-    sudo systemctl unmask getty@tty1.service
-    sudo systemctl start getty@tty1.service
-    active_tty="$(cat /sys/class/tty/tty0/active)"
-    sudo sh -c "TERM=linux setterm -cursor on > /dev/$active_tty"
+  ""|off)
+    run_xset dpms force off
     ;;
   status)
-    for t in graphical.target multi-user.target; do
-      printf '%-22s %s\n' "$t" "$(systemctl is-active "$t")"
-    done
-    printf '%-22s %s\n' "getty@tty1.service" "$(systemctl is-enabled getty@tty1.service 2>&1)"
-    printf '%-22s %s\n' "active vt" "$(cat /sys/class/tty/tty0/active)"
+    run_xset q | grep -A2 '^DPMS'
     ;;
   -h|--help)
     usage
